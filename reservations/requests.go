@@ -11,7 +11,6 @@ import (
 type (
 	CreateReservationRequest struct {
 		ChargerID string `json:"chargerID"`
-		//UserID    string `json:"userID"`
 		UserToken string `json:"userToken"`
 		From      string `json:"from"`
 		To        string `json:"to"`
