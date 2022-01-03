@@ -36,7 +36,7 @@ jobs:
     needs: [test]
     if: github.ref == 'refs/heads/master' && github.event_name == 'push'
     steps:
-       - name: Get Time
+      - name: Get Time
         id: time
         uses: nanzm/get-time-action@v1.0
         with:
