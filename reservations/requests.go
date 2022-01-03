@@ -11,7 +11,8 @@ import (
 type (
 	CreateReservationRequest struct {
 		ChargerID string `json:"chargerID"`
-		UserID    string `json:"userID"`
+		//UserID    string `json:"userID"`
+		UserToken string `json:"userToken"`
 		From      string `json:"from"`
 		To        string `json:"to"`
 	}
@@ -55,6 +56,20 @@ type (
 	GetReservationsFilterResponse struct {
 		Reservations []Reservation `json:"reservations"`
 	}
+	ReservationClosestRequest struct {
+		UserToken string   `json:"userToken"`
+		From      string   `json:"from"`
+		To        string   `json:"to"`
+		Location  Location `json:"location"`
+	}
+	ReservationClosestResponse struct {
+		ChargerID string `json:"chargerID"`
+		UserID    string `json:"userID"`
+		From      string `json:"from"`
+		To        string `json:"to"`
+		Created   string `json:"created"`
+		Modified  string `json:"modified"`
+	}
 	//OTHER
 	GetChargerRatingsRequest struct {
 	}
@@ -66,6 +81,11 @@ type (
 	GetChargerCommentsResponse struct {
 		Comments []Comment `json:"comments"`
 	}
+	GetChargersRequest struct {
+	}
+	GetChargersResponse struct {
+		Chargers []Charger `json:"chargers"`
+	}
 )
 
 func encodeResponse(ctx context.Context, w http.ResponseWriter, response interface{}) error {
@@ -75,6 +95,7 @@ func encodeResponse(ctx context.Context, w http.ResponseWriter, response interfa
 func decodeCreateReservationRequest(ctx context.Context, r *http.Request) (interface{}, error) {
 	req := CreateReservationRequest{}
 	err := json.NewDecoder(r.Body).Decode(&req)
+	req.UserToken = r.Header.Get("Authorization")
 	if err != nil {
 		return nil, err
 	}
@@ -91,6 +112,7 @@ func decodeUpdateReservationRequest(ctx context.Context, r *http.Request) (inter
 	return req, nil
 }
 func decodeGetReservationRequest(ctx context.Context, r *http.Request) (interface{}, error) {
+
 	req := GetReservationRequest{}
 	vals := mux.Vars(r)
 	req.Id = vals["id"]
@@ -110,5 +132,14 @@ func decodeGetReservationsFilterRequest(ctx context.Context, r *http.Request) (i
 	req := GetReservationsFilterRequest{}
 	req.ChargerID = r.URL.Query().Get("charger")
 	req.UserID = r.URL.Query().Get("user")
+	return req, nil
+}
+func decodeReservationClosestRequest(ctx context.Context, r *http.Request) (interface{}, error) {
+	req := ReservationClosestRequest{}
+	err := json.NewDecoder(r.Body).Decode(&req)
+	req.UserToken = r.Header.Get("Authorization")
+	if err != nil {
+		return nil, err
+	}
 	return req, nil
 }

@@ -2,7 +2,9 @@ package reservations
 
 import (
 	"context"
+	"strings"
 
+	"github.com/dgrijalva/jwt-go"
 	"github.com/go-kit/log"
 	"github.com/go-kit/log/level"
 	consulapi "github.com/hashicorp/consul/api"
@@ -22,9 +24,17 @@ func NewService(db ReservationDB, logger log.Logger, consul consulapi.Client) Re
 	}
 }
 
-func (s service) CreateReservation(ctx context.Context, from string, to string, userID string, chargerID string) (string, error) {
+func (s service) CreateReservation(ctx context.Context, from string, to string, userToken string, chargerID string) (string, error) {
 	logger := log.With(s.logger, "method: ", "CreateReservation")
-
+	secret, _ := getConsulValue(s.consul, s.logger, "jwtSecret")
+	token := strings.Split(userToken, " ")
+	if len(token) != 2 {
+		return "Authorization failed", nil
+	}
+	userID, err := FromJWT(token[1], secret)
+	if err != nil {
+		return "Authorization failed", nil
+	}
 	if err := s.db.CreateReservation(ctx, from, to, userID, chargerID); err != nil {
 		level.Error(logger).Log("err", err)
 		return "", err
@@ -82,4 +92,34 @@ func (s service) UpdateReservation(ctx context.Context, id string, from string, 
 	}
 	logger.Log("update Rating", id)
 	return "Ok", nil
+}
+func (s service) ReservationClosest(ctx context.Context, userToken string, from string, to string, location Location) (Reservation, string, error) {
+	reservation := Reservation{}
+	secret, _ := getConsulValue(s.consul, s.logger, "jwtSecret")
+	token := strings.Split(userToken, " ")
+	if len(token) != 2 {
+		return reservation, "Authorization failed", nil
+	}
+	userID, err := FromJWT(token[1], secret)
+	if err != nil {
+		return reservation, "Authorization failed", nil
+	}
+	logger := log.With(s.logger, "method: ", "ReservationClosest")
+	reservation, err = s.db.ReservationClosest(ctx, userID, from, to, location)
+	if err != nil {
+		level.Error(logger).Log("err", err)
+		return reservation, "Error", err
+	}
+	logger.Log("reserve Closest")
+	return reservation, "Ok", nil
+}
+func FromJWT(token string, secret string) (string, error) {
+	claims := jwt.MapClaims{}
+	_, err := jwt.ParseWithClaims(token, claims, func(token *jwt.Token) (interface{}, error) {
+		return []byte(secret), nil
+	})
+	if err != nil {
+		return "", err
+	}
+	return claims["user_id"].(string), nil
 }

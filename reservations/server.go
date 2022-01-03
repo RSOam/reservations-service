@@ -17,6 +17,11 @@ func NewHttpServer(ctx context.Context, endpoints Endpoints) http.Handler {
 		decodeCreateReservationRequest,
 		encodeResponse,
 	))
+	r.Methods("POST").Path("/reservations/closest").Handler(ht.NewServer(
+		endpoints.ReservationClosest,
+		decodeReservationClosestRequest,
+		encodeResponse,
+	))
 	r.Methods("PUT").Path("/reservations/{id}").Handler(ht.NewServer(
 		endpoints.UpdateReservation,
 		decodeUpdateReservationRequest,

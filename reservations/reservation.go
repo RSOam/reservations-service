@@ -57,4 +57,5 @@ type ReservationDB interface {
 	GetReservationsFilter(ctx context.Context, chargerID string, userID string) ([]Reservation, error)
 	UpdateReservation(ctx context.Context, id string, from string, to string) error
 	DeleteReservation(ctx context.Context, id string) error
+	ReservationClosest(ctx context.Context, userID, from string, to string, location Location) (Reservation, error)
 }

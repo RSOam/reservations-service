@@ -13,6 +13,7 @@ type Endpoints struct {
 	GetReservationsFilter endpoint.Endpoint
 	UpdateReservation     endpoint.Endpoint
 	DeleteReservation     endpoint.Endpoint
+	ReservationClosest    endpoint.Endpoint
 }
 
 func MakeEndpoints(s ReservationsService) Endpoints {
@@ -23,13 +24,14 @@ func MakeEndpoints(s ReservationsService) Endpoints {
 		GetReservationsFilter: makeGetReservationsFilterEndpoint(s),
 		UpdateReservation:     makeUpdateReservationEndpoint(s),
 		DeleteReservation:     makeDeleteReservationEndpoint(s),
+		ReservationClosest:    makeReservationClosestEndpoint(s),
 	}
 }
 
 func makeCreateReservationEndpoint(s ReservationsService) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
 		req := request.(CreateReservationRequest)
-		status, err := s.CreateReservation(ctx, req.From, req.To, req.UserID, req.ChargerID)
+		status, err := s.CreateReservation(ctx, req.From, req.To, req.UserToken, req.ChargerID)
 		return CreateReservationResponse{Status: status}, err
 	}
 }
@@ -88,5 +90,22 @@ func makeGetReservationsFilterEndpoint(s ReservationsService) endpoint.Endpoint 
 		return GetReservationsFilterResponse{
 			Reservations: reservations,
 		}, err
+	}
+}
+func makeReservationClosestEndpoint(s ReservationsService) endpoint.Endpoint {
+	return func(ctx context.Context, request interface{}) (interface{}, error) {
+		req := request.(ReservationClosestRequest)
+		reservation, status, err := s.ReservationClosest(ctx, req.UserToken, req.From, req.To, req.Location)
+		if err != nil {
+			return ReservationClosestResponse{
+				ChargerID: reservation.ChargerID.Hex(),
+				UserID:    reservation.UserID.Hex(),
+				From:      reservation.From,
+				To:        reservation.To,
+				Created:   reservation.Created,
+				Modified:  reservation.Modified,
+			}, err
+		}
+		return CreateReservationResponse{Status: status}, err
 	}
 }
